@@ -1,0 +1,9 @@
+id,site,arm,visit_date,sbp_base,sbp_wk4,sex,note
+1,Basel,Drug,2024-01-05,150,138,M, mild headache 
+2,Basel,Placebo,2024-01-06,148,147,F,
+3,Zurich,Drug,2024-01-09,160,141,F,none
+4,Zurich,Placebo,2024-01-10,155,NA,M,dropout
+5,Geneva,Drug,2024-02-01,142,130,M,none
+6,Geneva,Placebo,2024-02-03,151,149,F, Nausea
+7,Basel,Drug,2024-02-07,158,140,F,none
+8,Zurich,Placebo,2024-02-11,149,146,M,none
