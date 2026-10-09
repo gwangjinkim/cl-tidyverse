@@ -28,4 +28,11 @@
   (:export #:*tidyverse-packages*
            #:tidyverse-packages
            #:tidyverse-conflicts
-           #:define-tidy-package))
+           #:define-tidy-package
+           #:use-tidyverse
+           ;; bare verb names (src/verbs.lisp); dotted names come from cl-dplyr
+           #:filter #:mutate #:select #:rename #:arrange
+           #:summarise #:summarize #:distinct
+           #:group-by #:ungroup #:pull
+           #:inner-join #:left-join #:right-join #:full-join
+           #:semi-join #:anti-join))

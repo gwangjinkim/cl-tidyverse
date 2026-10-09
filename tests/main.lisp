@@ -77,3 +77,66 @@
                 (render (gg (df (aes :x :sbp_base :y :id :color :arm))
                           (geom_point))
                         :device :svg :width 300 :height 200)))))
+
+;;; --- D10: bare verb names and conflict resolution -----------------------
+
+(test bare-verbs-work-like-dotted
+  (let* ((df (tibble :g #("a" "b" "a") :x #(1 2 3)))
+         (y  (tibble :g #("a" "b") :label #("A" "B"))))
+    (is (equalp #(2 3) (pull (filter df (> :x 1)) :x)))
+    (is (equalp #(2 4 6) (pull (mutate df :y (* :x 2)) :y)))
+    (is (equalp #("x") (tbl-names (select df :x))))
+    (is (equalp #(3 2 1) (pull (arrange df (desc :x)) :x)))
+    (is (equalp #(4 2) (pull (summarise (group-by df :g) :s (sum :x)) :s)))
+    (is (equalp #("A" "B" "A") (pull (left-join df y :by :g) :label)))
+    (is (typep (ungroup (group-by df :g)) 'tbl))
+    (is (equalp #("a" "b") (pull (distinct df :g) :g)))))
+
+(test bare-verbs-do-not-clash-with-cl
+  (is (equal '("FILL" "SECOND")
+             (sort (mapcar (lambda (m) (getf m :name)) (tidyverse-conflicts :stream nil))
+                   #'string<))))
+
+(test serapeum-clashes-are-reported
+  (let ((names (mapcar (lambda (m) (getf m :name))
+                       (tidyverse-conflicts :with '(:serapeum) :stream nil))))
+    (dolist (n '("FILTER" "SELECT" "DISTINCT" "SLICE" "->"))
+      (is (member n names :test #'string=) "~a should clash with serapeum" n))))
+
+(test define-tidy-package-prefer
+  (let ((pkg (eval '(tidyverse:define-tidy-package #:cl-tidyverse/prefer
+                     (:also-use #:serapeum)
+                     (:prefer #:serapeum #:filter)))))
+    (unwind-protect
+         (progn
+           (is (eq (find-symbol "FILTER" :serapeum) (find-symbol "FILTER" pkg)))
+           (is (eq (find-symbol ".FILTER" :cl-dplyr) (find-symbol ".FILTER" pkg))
+               "the dotted verb stays available")
+           (is (eq (find-symbol "MUTATE" :tidyverse) (find-symbol "MUTATE" pkg))))
+      (delete-package pkg))))
+
+(test use-tidyverse-in-an-existing-package
+  "Simulates SBCL's CL-USER (which uses SB-EXT, exporting RENAME) with a
+user-defined MUTATE of its own."
+  (let ((pkg (make-package (gensym "TV-SIM") :use '(:cl #+sbcl :sb-ext))))
+    (unwind-protect
+         (let* ((own (intern "MUTATE" pkg))
+                (report (use-tidyverse :package pkg :stream nil)))
+           ;; inherited clashes are masked by tidyverse
+           (is (eq (find-symbol "FILL" :tidyverse) (find-symbol "FILL" pkg)))
+           #+sbcl (is (eq (find-symbol "RENAME" :tidyverse) (find-symbol "RENAME" pkg)))
+           ;; the package's own symbol is kept (and reported)
+           (is (eq own (find-symbol "MUTATE" pkg)))
+           (is (find "MUTATE" report :key (lambda (r) (getf r :name)) :test #'string=))
+           ;; everything else is now accessible
+           (is (eq (find-symbol "READ-CSV" :cl-readr) (find-symbol "READ-CSV" pkg))))
+      (delete-package pkg))))
+
+(test use-tidyverse-prefer
+  (let ((pkg (make-package (gensym "TV-SIM") :use '(:cl :serapeum))))
+    (unwind-protect
+         (progn
+           (use-tidyverse :package pkg :stream nil :prefer '((:serapeum "FILTER")))
+           (is (eq (find-symbol "FILTER" :serapeum) (find-symbol "FILTER" pkg)))
+           (is (eq (find-symbol "SELECT" :tidyverse) (find-symbol "SELECT" pkg))))
+      (delete-package pkg))))

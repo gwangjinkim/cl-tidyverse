@@ -29,40 +29,61 @@ from **one package**, `TIDYVERSE` (nickname `CL-TIDYVERSE`):
 | cl-ggplot2 | grammar-of-graphics plots (`gg`, `aes`, `geom_point`, ...) |
 | cl-vctrs-lite | vectors, the missing value `*na*`, recycling |
 
-## Using it in your own package
+## Verb names: `filter` and `.filter`
+
+`TIDYVERSE` exports the R spelling **and** cl-dplyr's dotted spelling:
+
+| Bare (TIDYVERSE) | Dotted (cl-dplyr, always available) |
+|---|---|
+| `filter mutate select rename arrange summarise summarize distinct` | `.filter .mutate ...` |
+| `group-by ungroup pull`, `inner-/left-/right-/full-/semi-/anti-join` | `.group-by ...`, `.left-join ...` |
+| — (`slice` is `cl-tibble:slice`; `count`, `first`, `last` are CL) | `.slice`, `.count`, ... |
+
+Inside `->` both spellings work. None of the bare names clashes with
+COMMON-LISP. Some clash with other libraries (`serapeum:filter`,
+`serapeum:select`, `serapeum:distinct`, `sb-ext:rename`,
+`parachute:summarize`); the three ways of using the tidyverse below resolve
+those for you.
+
+## Three ways to use it (and how conflicts are resolved)
+
+**1. The scratch package** — nothing to resolve, it uses only CL:
+
+```lisp
+(in-package :tidyverse-user)
+```
+
+**2. Your own package** — clashes resolved in favour of the tidyverse,
+with `:prefer` to keep another library's name:
 
 ```lisp
 (tidyverse:define-tidy-package #:my-analysis
-  (:also-use #:fiveam)          ; optional: other packages you want to :use
+  (:also-use #:fiveam #:serapeum)  ; other packages you want to :use
+  (:prefer #:serapeum #:filter)    ; keep serapeum's FILTER (use .filter)
   (:export #:run))
 ```
 
-This expands to a `defpackage` that uses `CL`, `TIDYVERSE` and the
-`:also-use` packages, and resolves every name clash in favour of the
-tidyverse. To see what is resolved:
+**3. An existing package such as SBCL's `CL-USER`** — like R's
+`library()`:
 
 ```lisp
-(tidyverse:tidyverse-conflicts :with '(:serapeum))
-;; -- Conflicts (resolved in favour of TIDYVERSE) --
+(tidyverse:use-tidyverse)
+;; -- Attached TIDYVERSE to COMMON-LISP-USER --
 ;; cl-tidyr:fill masks common-lisp:fill
+;; tidyverse:rename masks sb-ext:rename
 ;; cl-lubridate:second masks common-lisp:second
-;; cl-tibble:slice masks serapeum:slice
-;; cl-tidyr:nest masks serapeum:nest
-;; cl-dplyr:-> masks serapeum:->
-;; cl-lubridate:interval masks serapeum:interval
 ```
+
+Inherited symbols are masked; symbols you defined in that package yourself
+are kept (as R's global environment masks packages) and reported.
+`(use-tidyverse :prefer '((:serapeum "FILTER")))` keeps chosen names.
+
+`(tidyverse:tidyverse-conflicts :with '(:serapeum))` lists every clash
+before you decide.
 
 The two `COMMON-LISP` clashes are transparent: `(fill (list 1 2) 0)` is
 `cl:fill` and `(second '(a b))` is `cl:second`; they only behave
 differently on tibbles and timestamps respectively.
-
-If you prefer to write it by hand:
-
-```lisp
-(defpackage #:my-analysis
-  (:use #:cl #:tidyverse)
-  (:shadowing-import-from #:tidyverse #:fill #:second))
-```
 
 ## Missing values
 

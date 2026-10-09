@@ -21,6 +21,7 @@ with all name conflicts resolved."
   :components ((:module "src"
                 :serial t
                 :components ((:file "package")
+                             (:file "verbs")
                              (:file "tidyverse")
                              (:file "user"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-tidyverse/tests))))
