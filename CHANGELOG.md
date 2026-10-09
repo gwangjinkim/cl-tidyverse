@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+- AGENTS.md: "Parity work" section listing this repository's parity
+  milestones (TV1) and where the plan and backlog live
+  (topic: parity plan).
+
 ### Added
 - System `cl-tidyverse`: loads cl-vctrs-lite, cl-tibble, cl-readr,
   cl-dplyr, cl-tidyr, cl-stringr, cl-forcats, cl-lubridate and cl-ggplot2.
